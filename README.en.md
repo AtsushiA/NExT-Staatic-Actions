@@ -36,6 +36,11 @@ The email and webhook sections each have a "Send test with saved settings" butto
 delivery and see a success/failure status immediately, without waiting for an actual Staatic publish
 (this works regardless of whether the enable toggles are on).
 
+The Cloudflare section has two buttons you can use right after saving a Zone ID / API token:
+
+- **Verify connection** — calls the Cloudflare API to confirm the Zone ID and token are valid, without purging anything
+- **Purge now** — after a confirmation dialog, actually purges the entire cache using the saved settings
+
 The following placeholders are available in the email and webhook templates:
 
 ```

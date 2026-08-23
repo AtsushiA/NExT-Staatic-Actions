@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace NExT\StaaticActions\Admin;
 
+use NExT\StaaticActions\Action\CloudflarePurgeAction;
 use NExT\StaaticActions\Action\EmailAction;
 use NExT\StaaticActions\Action\WebhookAction;
 use NExT\StaaticActions\Logging\DebugLogger;
@@ -80,6 +81,29 @@ final class SettingsPage {
 		add_settings_field( 'cloudflare_enabled_failure', __( '失敗時にパージ', 'next-staatic-actions' ), array( $this, 'fieldCheckbox' ), self::PAGE_SLUG, 'nsa_cloudflare', array( 'key' => 'cloudflare_enabled_failure' ) );
 		add_settings_field( 'cloudflare_zone_id', __( 'Zone ID', 'next-staatic-actions' ), array( $this, 'fieldText' ), self::PAGE_SLUG, 'nsa_cloudflare', array( 'key' => 'cloudflare_zone_id' ) );
 		add_settings_field( 'cloudflare_api_token', __( 'API トークン', 'next-staatic-actions' ), array( $this, 'fieldPassword' ), self::PAGE_SLUG, 'nsa_cloudflare', array( 'key' => 'cloudflare_api_token' ) );
+		add_settings_field(
+			'cloudflare_verify',
+			__( '接続確認', 'next-staatic-actions' ),
+			array( $this, 'fieldTestSend' ),
+			self::PAGE_SLUG,
+			'nsa_cloudflare',
+			array(
+				'channel' => 'cloudflare_verify',
+				'label'   => __( 'Zone ID・APIトークンを確認', 'next-staatic-actions' ),
+			)
+		);
+		add_settings_field(
+			'cloudflare_purge_now',
+			__( '今すぐパージ', 'next-staatic-actions' ),
+			array( $this, 'fieldTestSend' ),
+			self::PAGE_SLUG,
+			'nsa_cloudflare',
+			array(
+				'channel' => 'cloudflare_purge',
+				'label'   => __( '今すぐキャッシュをパージ', 'next-staatic-actions' ),
+				'confirm' => __( 'Cloudflare のキャッシュを今すぐ全て削除します。よろしいですか？', 'next-staatic-actions' ),
+			)
+		);
 
 		add_settings_section( 'nsa_webhook', __( 'Webhook 通知', 'next-staatic-actions' ), '__return_false', self::PAGE_SLUG );
 		add_settings_field( 'webhook_enabled_success', __( '成功時に送信', 'next-staatic-actions' ), array( $this, 'fieldCheckbox' ), self::PAGE_SLUG, 'nsa_webhook', array( 'key' => 'webhook_enabled_success' ) );
@@ -157,6 +181,10 @@ final class SettingsPage {
 					return;
 				}
 				event.preventDefault();
+
+				if ( button.dataset.confirm && ! window.confirm( button.dataset.confirm ) ) {
+					return;
+				}
 
 				var channel = button.dataset.channel;
 				var result  = document.querySelector( '.nsa-test-result[data-channel="' + channel + '"]' );
@@ -339,11 +367,14 @@ final class SettingsPage {
 	}
 
 	public function fieldTestSend( array $args ): void {
+		$label       = $args['label'] ?? __( '保存済みの設定でテスト送信', 'next-staatic-actions' );
+		$confirmAttr = isset( $args['confirm'] ) ? sprintf( ' data-confirm="%s"', esc_attr( $args['confirm'] ) ) : '';
 		printf(
-			'<button type="button" class="button nsa-test-send" data-channel="%1$s" data-nonce="%2$s">%3$s</button> <span class="nsa-test-result" data-channel="%1$s"></span>',
+			'<button type="button" class="button nsa-test-send" data-channel="%1$s" data-nonce="%2$s"%4$s>%3$s</button> <span class="nsa-test-result" data-channel="%1$s"></span>',
 			esc_attr( $args['channel'] ),
 			esc_attr( wp_create_nonce( 'next_staatic_actions_test_send' ) ),
-			esc_html__( '保存済みの設定でテスト送信', 'next-staatic-actions' )
+			esc_html( $label ),
+			$confirmAttr // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- already a fully-escaped ' data-confirm="..."' attribute string (or ''), built above via esc_attr().
 		);
 	}
 
@@ -363,6 +394,10 @@ final class SettingsPage {
 			$result = ( new EmailAction( $this->settings, $logger ) )->sendTest();
 		} elseif ( $channel === 'webhook' ) {
 			$result = ( new WebhookAction( $this->settings, $logger ) )->sendTest();
+		} elseif ( $channel === 'cloudflare_verify' ) {
+			$result = ( new CloudflarePurgeAction( $this->settings, $logger ) )->verifyConnection();
+		} elseif ( $channel === 'cloudflare_purge' ) {
+			$result = ( new CloudflarePurgeAction( $this->settings, $logger ) )->purgeNow();
 		} else {
 			wp_send_json_error( array( 'message' => __( '不明な送信先です。', 'next-staatic-actions' ) ), 400 );
 
