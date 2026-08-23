@@ -2,7 +2,7 @@
 /**
  * Plugin Name: NExT Staatic Actions
  * Description: Staatic の公開（静的ジェネレート）完了時にメール通知・Cloudflareキャッシュパージ・Webhook通知を実行し、スケジュールに沿って自動公開も行います。
- * Version: 1.4.0
+ * Version: 1.5.0
  * Requires PHP: 7.4
  * Requires at least: 5.0
  * Author: NExT-Season
@@ -16,7 +16,7 @@ if ( ! defined( 'WPINC' ) ) {
 	die;
 }
 
-define( 'NEXT_STAATIC_ACTIONS_VERSION', '1.4.0' );
+define( 'NEXT_STAATIC_ACTIONS_VERSION', '1.5.0' );
 define( 'NEXT_STAATIC_ACTIONS_PATH', plugin_dir_path( __FILE__ ) );
 define( 'NEXT_STAATIC_ACTIONS_URL', plugin_dir_url( __FILE__ ) );
 define( 'NEXT_STAATIC_ACTIONS_SETTINGS_OPTION', 'next_staatic_actions_settings' );
