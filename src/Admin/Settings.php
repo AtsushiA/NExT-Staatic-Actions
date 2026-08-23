@@ -58,34 +58,45 @@ final class Settings {
 
 		$out['email_enabled_success'] = ! empty( $input['email_enabled_success'] );
 		$out['email_enabled_failure'] = ! empty( $input['email_enabled_failure'] );
-		$out['email_recipients']      = $this->sanitizeEmailList( $input['email_recipients'] ?? '' );
-		$out['email_subject']         = sanitize_text_field( $input['email_subject'] ?? $defaults['email_subject'] );
-		$out['email_body']            = $this->sanitizeMultiline( $input['email_body'] ?? $defaults['email_body'] );
+		$out['email_recipients']      = $this->sanitizeEmailList( $this->str( $input['email_recipients'] ?? '' ) );
+		$out['email_subject']         = sanitize_text_field( $this->str( $input['email_subject'] ?? $defaults['email_subject'], $defaults['email_subject'] ) );
+		$out['email_body']            = $this->sanitizeMultiline( $this->str( $input['email_body'] ?? $defaults['email_body'], $defaults['email_body'] ) );
 
 		$out['cloudflare_enabled_success'] = ! empty( $input['cloudflare_enabled_success'] );
 		$out['cloudflare_enabled_failure'] = ! empty( $input['cloudflare_enabled_failure'] );
-		$out['cloudflare_zone_id']         = sanitize_text_field( $input['cloudflare_zone_id'] ?? '' );
-		$out['cloudflare_api_token']       = sanitize_text_field( $input['cloudflare_api_token'] ?? '' );
+		$out['cloudflare_zone_id']         = sanitize_text_field( $this->str( $input['cloudflare_zone_id'] ?? '' ) );
+		$out['cloudflare_api_token']       = sanitize_text_field( $this->str( $input['cloudflare_api_token'] ?? '' ) );
 
 		$out['webhook_enabled_success'] = ! empty( $input['webhook_enabled_success'] );
 		$out['webhook_enabled_failure'] = ! empty( $input['webhook_enabled_failure'] );
-		$out['webhook_url']             = esc_url_raw( $input['webhook_url'] ?? '' );
+		$out['webhook_url']             = esc_url_raw( $this->str( $input['webhook_url'] ?? '' ) );
 		$allowedMethods                 = array( 'GET', 'POST', 'PUT', 'PATCH', 'DELETE' );
-		$method                         = strtoupper( $input['webhook_method'] ?? 'POST' );
+		$method                         = strtoupper( $this->str( $input['webhook_method'] ?? 'POST', 'POST' ) );
 		$out['webhook_method']          = in_array( $method, $allowedMethods, true ) ? $method : 'POST';
-		$out['webhook_headers']         = $this->sanitizeMultiline( $input['webhook_headers'] ?? '' );
-		$out['webhook_body']            = $this->sanitizeMultiline( $input['webhook_body'] ?? '' );
+		$out['webhook_headers']         = $this->sanitizeMultiline( $this->str( $input['webhook_headers'] ?? '' ) );
+		$out['webhook_body']            = $this->sanitizeMultiline( $this->str( $input['webhook_body'] ?? '' ) );
 
 		$out['schedule_enabled']  = ! empty( $input['schedule_enabled'] );
 		$mode                     = $input['schedule_mode'] ?? 'daily';
 		$out['schedule_mode']     = in_array( $mode, array( 'one_time', 'daily', 'weekly' ), true ) ? $mode : 'daily';
-		$out['schedule_time']     = $this->sanitizeTime( $input['schedule_time'] ?? $defaults['schedule_time'] );
-		$out['schedule_date']     = $this->sanitizeDate( $input['schedule_date'] ?? '' );
+		$out['schedule_time']     = $this->sanitizeTime( $this->str( $input['schedule_time'] ?? $defaults['schedule_time'], $defaults['schedule_time'] ) );
+		$out['schedule_date']     = $this->sanitizeDate( $this->str( $input['schedule_date'] ?? '' ) );
 		$out['schedule_weekdays'] = $this->sanitizeWeekdays( $input['schedule_weekdays'] ?? array() );
 
 		$out['debug_log_enabled'] = ! empty( $input['debug_log_enabled'] );
 
 		return $out;
+	}
+
+	/**
+	 * Coerces a raw POST value to a string, falling back to $fallback for
+	 * anything that isn't scalar (e.g. an array from a malformed submission,
+	 * which would otherwise fatal the strictly-typed sanitizers below).
+	 *
+	 * @param mixed $value
+	 */
+	private function str( $value, string $fallback = '' ): string {
+		return is_scalar( $value ) ? (string) $value : $fallback;
 	}
 
 	private function sanitizeTime( string $raw ): string {

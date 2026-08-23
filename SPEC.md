@@ -96,6 +96,7 @@ wp-config.php の定数ではなく、WP管理画面の設定ページ（Setting
 | [1.2.0](https://github.com/AtsushiA/NExT-Staatic-Actions/releases/tag/1.2.0) | 設定ページをタブ構成に変更（メール／Cloudflare／Webhook／スケジュール公開／詳細設定） |
 | [1.3.0](https://github.com/AtsushiA/NExT-Staatic-Actions/releases/tag/1.3.0) | メール通知・Webhook通知に「テスト送信」ボタンを追加（ステータス表示付き） |
 | [1.4.0](https://github.com/AtsushiA/NExT-Staatic-Actions/releases/tag/1.4.0) | Cloudflareに「接続確認」「今すぐパージ」ボタンを追加 |
+| [1.5.0](https://github.com/AtsushiA/NExT-Staatic-Actions/releases/tag/1.5.0) | セキュリティレビューで発見した不具合を修正：設定保存時、一部フィールドが配列で送信されるとFatal Errorになっていた問題を修正 |
 
 
 ## 将来的な拡張（未着手）

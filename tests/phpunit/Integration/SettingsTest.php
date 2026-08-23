@@ -128,4 +128,38 @@ final class SettingsTest extends WP_UnitTestCase {
 
 		self::assertSame( array( 'mon', 'fri' ), $result['schedule_weekdays'] );
 	}
+
+	/**
+	 * A malformed submission (e.g. a duplicated field name posted as
+	 * `field[]=x`) can put an array where a scalar string is expected for
+	 * any of these fields; sanitize() must fall back to a safe default
+	 * instead of fataling with a TypeError.
+	 *
+	 * @dataProvider provideStringFieldsRejectArrayInput
+	 */
+	public function test_sanitize_does_not_fatal_when_a_string_field_is_posted_as_an_array( string $field ): void {
+		$result = $this->settings->sanitize(
+			array(
+				$field => array( 'unexpected', 'array' ),
+			)
+		);
+
+		self::assertIsString( $result[ $field ] );
+	}
+
+	public function provideStringFieldsRejectArrayInput(): array {
+		return array(
+			array( 'email_recipients' ),
+			array( 'email_subject' ),
+			array( 'email_body' ),
+			array( 'cloudflare_zone_id' ),
+			array( 'cloudflare_api_token' ),
+			array( 'webhook_url' ),
+			array( 'webhook_method' ),
+			array( 'webhook_headers' ),
+			array( 'webhook_body' ),
+			array( 'schedule_time' ),
+			array( 'schedule_date' ),
+		);
+	}
 }
