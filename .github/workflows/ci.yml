@@ -77,6 +77,11 @@ jobs:
       - uses: actions/checkout@v4
       - uses: wordpress/plugin-check-action@v1
         with:
+          # Without this, Plugin Check infers the expected text domain from
+          # the checkout directory name (this repo's name, "NExT-Staatic-
+          # Actions") instead of the actual plugin slug, and flags every
+          # translation call as a text-domain mismatch.
+          slug: next-staatic-actions
           # vendor / tests / bin are not part of the shipped plugin.
           exclude-directories: "vendor,tests,node_modules,bin"
           # Not distributed via wp.org, so the plugin_repo category doesn't apply.
