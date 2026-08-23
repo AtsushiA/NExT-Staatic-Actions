@@ -1,0 +1,166 @@
+<?php
+
+declare(strict_types=1);
+
+namespace NExT\StaaticActions\Admin;
+
+final class SettingsPage
+{
+    private const PAGE_SLUG = 'next-staatic-actions';
+    private const OPTION_GROUP = 'next_staatic_actions_settings_group';
+
+    /** @var Settings */
+    private $settings;
+
+    public function __construct(Settings $settings)
+    {
+        $this->settings = $settings;
+    }
+
+    public function registerHooks(): void
+    {
+        // Priority 20: must run after Staatic's own admin_menu callback (default
+        // priority 10) has registered its top-level 'staatic' page, otherwise
+        // WordPress resolves a mismatched hookname for this submenu and denies access.
+        add_action('admin_menu', [$this, 'registerMenu'], 20);
+        add_action('admin_init', [$this, 'registerSettings']);
+    }
+
+    public function registerMenu(): void
+    {
+        $parentSlug = defined('STAATIC_VERSION') ? 'staatic' : null;
+
+        if ($parentSlug) {
+            add_submenu_page(
+                $parentSlug,
+                __('NExT Staatic Actions', 'next-staatic-actions'),
+                __('Actions', 'next-staatic-actions'),
+                'manage_options',
+                self::PAGE_SLUG,
+                [$this, 'renderPage']
+            );
+
+            return;
+        }
+
+        add_menu_page(
+            __('NExT Staatic Actions', 'next-staatic-actions'),
+            __('Staatic Actions', 'next-staatic-actions'),
+            'manage_options',
+            self::PAGE_SLUG,
+            [$this, 'renderPage']
+        );
+    }
+
+    public function registerSettings(): void
+    {
+        register_setting(self::OPTION_GROUP, Settings::OPTION_NAME, [
+            'type' => 'array',
+            'sanitize_callback' => [$this->settings, 'sanitize'],
+            'default' => Settings::defaults(),
+        ]);
+
+        add_settings_section('nsa_email', __('メール通知', 'next-staatic-actions'), '__return_false', self::PAGE_SLUG);
+        add_settings_field('email_enabled_success', __('成功時に送信', 'next-staatic-actions'), [$this, 'fieldCheckbox'], self::PAGE_SLUG, 'nsa_email', ['key' => 'email_enabled_success']);
+        add_settings_field('email_enabled_failure', __('失敗時に送信', 'next-staatic-actions'), [$this, 'fieldCheckbox'], self::PAGE_SLUG, 'nsa_email', ['key' => 'email_enabled_failure']);
+        add_settings_field('email_recipients', __('宛先（カンマ・改行区切りで複数可）', 'next-staatic-actions'), [$this, 'fieldTextarea'], self::PAGE_SLUG, 'nsa_email', ['key' => 'email_recipients']);
+        add_settings_field('email_subject', __('件名', 'next-staatic-actions'), [$this, 'fieldText'], self::PAGE_SLUG, 'nsa_email', ['key' => 'email_subject']);
+        add_settings_field('email_body', __('本文', 'next-staatic-actions'), [$this, 'fieldTextarea'], self::PAGE_SLUG, 'nsa_email', ['key' => 'email_body']);
+
+        add_settings_section('nsa_cloudflare', __('Cloudflare キャッシュパージ', 'next-staatic-actions'), '__return_false', self::PAGE_SLUG);
+        add_settings_field('cloudflare_enabled_success', __('成功時にパージ', 'next-staatic-actions'), [$this, 'fieldCheckbox'], self::PAGE_SLUG, 'nsa_cloudflare', ['key' => 'cloudflare_enabled_success']);
+        add_settings_field('cloudflare_enabled_failure', __('失敗時にパージ', 'next-staatic-actions'), [$this, 'fieldCheckbox'], self::PAGE_SLUG, 'nsa_cloudflare', ['key' => 'cloudflare_enabled_failure']);
+        add_settings_field('cloudflare_zone_id', __('Zone ID', 'next-staatic-actions'), [$this, 'fieldText'], self::PAGE_SLUG, 'nsa_cloudflare', ['key' => 'cloudflare_zone_id']);
+        add_settings_field('cloudflare_api_token', __('API トークン', 'next-staatic-actions'), [$this, 'fieldPassword'], self::PAGE_SLUG, 'nsa_cloudflare', ['key' => 'cloudflare_api_token']);
+
+        add_settings_section('nsa_webhook', __('Webhook 通知', 'next-staatic-actions'), '__return_false', self::PAGE_SLUG);
+        add_settings_field('webhook_enabled_success', __('成功時に送信', 'next-staatic-actions'), [$this, 'fieldCheckbox'], self::PAGE_SLUG, 'nsa_webhook', ['key' => 'webhook_enabled_success']);
+        add_settings_field('webhook_enabled_failure', __('失敗時に送信', 'next-staatic-actions'), [$this, 'fieldCheckbox'], self::PAGE_SLUG, 'nsa_webhook', ['key' => 'webhook_enabled_failure']);
+        add_settings_field('webhook_url', __('URL', 'next-staatic-actions'), [$this, 'fieldText'], self::PAGE_SLUG, 'nsa_webhook', ['key' => 'webhook_url']);
+        add_settings_field('webhook_method', __('HTTPメソッド', 'next-staatic-actions'), [$this, 'fieldMethodSelect'], self::PAGE_SLUG, 'nsa_webhook', ['key' => 'webhook_method']);
+        add_settings_field('webhook_headers', __('ヘッダー（1行につき Name: value）', 'next-staatic-actions'), [$this, 'fieldTextarea'], self::PAGE_SLUG, 'nsa_webhook', ['key' => 'webhook_headers']);
+        add_settings_field('webhook_body', __('ボディ（空欄の場合はJSONを自動送信）', 'next-staatic-actions'), [$this, 'fieldTextarea'], self::PAGE_SLUG, 'nsa_webhook', ['key' => 'webhook_body']);
+
+        add_settings_section('nsa_advanced', __('詳細設定', 'next-staatic-actions'), '__return_false', self::PAGE_SLUG);
+        add_settings_field('debug_log_enabled', __('デバッグログを有効化', 'next-staatic-actions'), [$this, 'fieldCheckbox'], self::PAGE_SLUG, 'nsa_advanced', ['key' => 'debug_log_enabled']);
+    }
+
+    public function renderPage(): void
+    {
+        if (!current_user_can('manage_options')) {
+            return;
+        }
+        ?>
+        <div class="wrap">
+            <h1><?php esc_html_e('NExT Staatic Actions', 'next-staatic-actions'); ?></h1>
+            <p><?php esc_html_e('プレースホルダー: {{status}} {{publication_id}} {{destination_url}} {{date_finished}} {{site_url}} {{admin_publication_url}} {{failure_message}}', 'next-staatic-actions'); ?></p>
+            <form method="post" action="options.php">
+                <?php
+                settings_fields(self::OPTION_GROUP);
+                do_settings_sections(self::PAGE_SLUG);
+                submit_button();
+                ?>
+            </form>
+        </div>
+        <?php
+    }
+
+    public function fieldCheckbox(array $args): void
+    {
+        $value = $this->settings->get()[$args['key']];
+        printf(
+            '<input type="checkbox" name="%1$s[%2$s]" value="1" %3$s />',
+            esc_attr(Settings::OPTION_NAME),
+            esc_attr($args['key']),
+            checked($value, true, false)
+        );
+    }
+
+    public function fieldText(array $args): void
+    {
+        $value = $this->settings->get()[$args['key']];
+        printf(
+            '<input type="text" class="regular-text" name="%1$s[%2$s]" value="%3$s" />',
+            esc_attr(Settings::OPTION_NAME),
+            esc_attr($args['key']),
+            esc_attr($value)
+        );
+    }
+
+    public function fieldPassword(array $args): void
+    {
+        $value = $this->settings->get()[$args['key']];
+        printf(
+            '<input type="password" class="regular-text" autocomplete="off" name="%1$s[%2$s]" value="%3$s" />',
+            esc_attr(Settings::OPTION_NAME),
+            esc_attr($args['key']),
+            esc_attr($value)
+        );
+    }
+
+    public function fieldTextarea(array $args): void
+    {
+        $value = $this->settings->get()[$args['key']];
+        printf(
+            '<textarea class="large-text" rows="4" name="%1$s[%2$s]">%3$s</textarea>',
+            esc_attr(Settings::OPTION_NAME),
+            esc_attr($args['key']),
+            esc_textarea($value)
+        );
+    }
+
+    public function fieldMethodSelect(array $args): void
+    {
+        $value = $this->settings->get()[$args['key']];
+        $methods = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
+        printf('<select name="%1$s[%2$s]">', esc_attr(Settings::OPTION_NAME), esc_attr($args['key']));
+        foreach ($methods as $method) {
+            printf(
+                '<option value="%1$s" %2$s>%1$s</option>',
+                esc_attr($method),
+                selected($value, $method, false)
+            );
+        }
+        echo '</select>';
+    }
+}

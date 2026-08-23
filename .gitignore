@@ -1,0 +1,21 @@
+# Dependencies
+/vendor/
+/node_modules/
+
+# Build artifacts
+/*.zip
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# Local environment / secrets
+.env
+.env.*
+
+# Logs
+*.log
