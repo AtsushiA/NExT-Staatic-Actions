@@ -6,7 +6,8 @@
 
 A WordPress plugin that automatically sends email notifications, purges Cloudflare cache, and fires
 webhook requests whenever [Staatic](https://staatic.com/wordpress) (a static site generator plugin)
-finishes publishing (deploying) your site.
+finishes publishing (deploying) your site. It can also trigger the publish itself on a schedule —
+once at a specific date/time, daily, or on selected weekdays.
 
 ## Requirements
 
@@ -38,6 +39,20 @@ The following placeholders are available in the email and webhook templates:
 {{date_created}} {{date_finished}} {{num_urls_crawled}} {{num_results_deployed}}
 {{user_id}} {{user_login}} {{site_url}} {{admin_publication_url}} {{failure_message}}
 ```
+
+## Scheduled publishing
+
+Under Staatic's admin menu, on the "Actions" settings page's "Scheduled Publish" section, you can
+enable automatic publishing with one of these modes. Times are evaluated in the site's timezone.
+
+| Mode | Description |
+|---|---|
+| Once, at a specific date/time | Publishes exactly once at the given date and time (a past date/time is ignored) |
+| Daily | Publishes every day at the given time |
+| Specific weekdays | Publishes only on the selected weekdays, at the given time |
+
+This works via WP-Cron (`next_staatic_actions_scheduled_publish`) calling Staatic's own publish
+trigger, `do_action('staatic_publish')`; saving the settings automatically reschedules it.
 
 ## How detection works
 

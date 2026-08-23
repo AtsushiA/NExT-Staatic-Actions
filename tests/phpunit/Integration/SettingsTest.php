@@ -78,4 +78,54 @@ final class SettingsTest extends WP_UnitTestCase {
 		self::assertTrue( $result['email_enabled_success'] );
 		self::assertFalse( $result['email_enabled_failure'] );
 	}
+
+	public function test_sanitize_rejects_an_invalid_schedule_time(): void {
+		$result = $this->settings->sanitize(
+			array(
+				'schedule_time' => 'not-a-time',
+			)
+		);
+
+		self::assertSame( Settings::defaults()['schedule_time'], $result['schedule_time'] );
+	}
+
+	public function test_sanitize_accepts_a_valid_schedule_time(): void {
+		$result = $this->settings->sanitize(
+			array(
+				'schedule_time' => '23:45',
+			)
+		);
+
+		self::assertSame( '23:45', $result['schedule_time'] );
+	}
+
+	public function test_sanitize_rejects_an_invalid_schedule_mode(): void {
+		$result = $this->settings->sanitize(
+			array(
+				'schedule_mode' => 'hourly',
+			)
+		);
+
+		self::assertSame( 'daily', $result['schedule_mode'] );
+	}
+
+	public function test_sanitize_rejects_a_malformed_schedule_date(): void {
+		$result = $this->settings->sanitize(
+			array(
+				'schedule_date' => 'tomorrow',
+			)
+		);
+
+		self::assertSame( '', $result['schedule_date'] );
+	}
+
+	public function test_sanitize_filters_invalid_weekdays(): void {
+		$result = $this->settings->sanitize(
+			array(
+				'schedule_weekdays' => array( 'mon', 'funday', 'fri' ),
+			)
+		);
+
+		self::assertSame( array( 'mon', 'fri' ), $result['schedule_weekdays'] );
+	}
 }
