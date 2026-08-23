@@ -9,6 +9,8 @@ final class SettingsPage {
 	private const PAGE_SLUG    = 'next-staatic-actions';
 	private const OPTION_GROUP = 'next_staatic_actions_settings_group';
 
+	private const TAB_IDS = array( 'nsa_email', 'nsa_cloudflare', 'nsa_webhook', 'nsa_schedule', 'nsa_advanced' );
+
 	/** @var Settings */
 	private $settings;
 
@@ -96,19 +98,82 @@ final class SettingsPage {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			return;
 		}
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only tab display, not a state-changing action; the value is checked against an allow-list below.
+		$requestedTab = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : '';
+		$activeTab    = in_array( $requestedTab, self::TAB_IDS, true ) ? $requestedTab : self::TAB_IDS[0];
+		$labels       = $this->tabLabels();
 		?>
 		<div class="wrap">
 			<h1><?php esc_html_e( 'NExT Staatic Actions', 'next-staatic-actions' ); ?></h1>
 			<p><?php esc_html_e( 'プレースホルダー: {{status}} {{publication_id}} {{destination_url}} {{date_finished}} {{site_url}} {{admin_publication_url}} {{failure_message}}', 'next-staatic-actions' ); ?></p>
+
+			<h2 class="nav-tab-wrapper">
+				<?php foreach ( self::TAB_IDS as $tabId ) : ?>
+					<?php
+					$url         = add_query_arg(
+						array(
+							'page' => self::PAGE_SLUG,
+							'tab'  => $tabId,
+						),
+						admin_url( 'admin.php' )
+					);
+					$activeClass = $tabId === $activeTab ? 'nav-tab-active' : '';
+					printf(
+						'<a href="%1$s" class="nav-tab %2$s">%3$s</a>',
+						esc_url( $url ),
+						esc_attr( $activeClass ),
+						esc_html( $labels[ $tabId ] )
+					);
+					?>
+				<?php endforeach; ?>
+			</h2>
+
 			<form method="post" action="options.php">
 				<?php
 				settings_fields( self::OPTION_GROUP );
-				do_settings_sections( self::PAGE_SLUG );
+				// All tabs' fields are rendered in every request (only display toggles
+				// per tab) so the single shared option array is never partially
+				// overwritten with defaults when saving from a non-active tab.
+				foreach ( self::TAB_IDS as $tabId ) {
+					$this->renderTabPanel( $tabId, $tabId === $activeTab );
+				}
 				submit_button();
 				?>
 			</form>
 		</div>
 		<?php
+	}
+
+	private function tabLabels(): array {
+		return array(
+			'nsa_email'      => __( 'メール通知', 'next-staatic-actions' ),
+			'nsa_cloudflare' => __( 'Cloudflare キャッシュパージ', 'next-staatic-actions' ),
+			'nsa_webhook'    => __( 'Webhook 通知', 'next-staatic-actions' ),
+			'nsa_schedule'   => __( 'スケジュール公開', 'next-staatic-actions' ),
+			'nsa_advanced'   => __( '詳細設定', 'next-staatic-actions' ),
+		);
+	}
+
+	private function renderTabPanel( string $sectionId, bool $isActive ): void {
+		global $wp_settings_sections;
+
+		printf(
+			'<div class="nsa-tab-panel" data-tab="%s"%s>',
+			esc_attr( $sectionId ),
+			$isActive ? '' : ' style="display:none;"'
+		);
+
+		$section = $wp_settings_sections[ self::PAGE_SLUG ][ $sectionId ] ?? null;
+		if ( $section && $section['callback'] ) {
+			call_user_func( $section['callback'], $section );
+		}
+
+		echo '<table class="form-table" role="presentation">';
+		do_settings_fields( self::PAGE_SLUG, $sectionId );
+		echo '</table>';
+
+		echo '</div>';
 	}
 
 	public function sectionScheduleIntro(): void {
