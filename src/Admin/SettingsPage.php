@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace NExT\StaaticActions\Admin;
 
+use NExT\StaaticActions\Action\EmailAction;
+use NExT\StaaticActions\Action\WebhookAction;
+use NExT\StaaticActions\Logging\DebugLogger;
+
 final class SettingsPage {
 
 	private const PAGE_SLUG    = 'next-staatic-actions';
@@ -24,6 +28,7 @@ final class SettingsPage {
 		// WordPress resolves a mismatched hookname for this submenu and denies access.
 		add_action( 'admin_menu', array( $this, 'registerMenu' ), 20 );
 		add_action( 'admin_init', array( $this, 'registerSettings' ) );
+		add_action( 'wp_ajax_next_staatic_actions_test_send', array( $this, 'ajaxTestSend' ) );
 	}
 
 	public function registerMenu(): void {
@@ -68,6 +73,7 @@ final class SettingsPage {
 		add_settings_field( 'email_recipients', __( '宛先（カンマ・改行区切りで複数可）', 'next-staatic-actions' ), array( $this, 'fieldTextarea' ), self::PAGE_SLUG, 'nsa_email', array( 'key' => 'email_recipients' ) );
 		add_settings_field( 'email_subject', __( '件名', 'next-staatic-actions' ), array( $this, 'fieldText' ), self::PAGE_SLUG, 'nsa_email', array( 'key' => 'email_subject' ) );
 		add_settings_field( 'email_body', __( '本文', 'next-staatic-actions' ), array( $this, 'fieldTextarea' ), self::PAGE_SLUG, 'nsa_email', array( 'key' => 'email_body' ) );
+		add_settings_field( 'email_test_send', __( 'テスト送信', 'next-staatic-actions' ), array( $this, 'fieldTestSend' ), self::PAGE_SLUG, 'nsa_email', array( 'channel' => 'email' ) );
 
 		add_settings_section( 'nsa_cloudflare', __( 'Cloudflare キャッシュパージ', 'next-staatic-actions' ), '__return_false', self::PAGE_SLUG );
 		add_settings_field( 'cloudflare_enabled_success', __( '成功時にパージ', 'next-staatic-actions' ), array( $this, 'fieldCheckbox' ), self::PAGE_SLUG, 'nsa_cloudflare', array( 'key' => 'cloudflare_enabled_success' ) );
@@ -82,6 +88,7 @@ final class SettingsPage {
 		add_settings_field( 'webhook_method', __( 'HTTPメソッド', 'next-staatic-actions' ), array( $this, 'fieldMethodSelect' ), self::PAGE_SLUG, 'nsa_webhook', array( 'key' => 'webhook_method' ) );
 		add_settings_field( 'webhook_headers', __( 'ヘッダー（1行につき Name: value）', 'next-staatic-actions' ), array( $this, 'fieldTextarea' ), self::PAGE_SLUG, 'nsa_webhook', array( 'key' => 'webhook_headers' ) );
 		add_settings_field( 'webhook_body', __( 'ボディ（空欄の場合はJSONを自動送信）', 'next-staatic-actions' ), array( $this, 'fieldTextarea' ), self::PAGE_SLUG, 'nsa_webhook', array( 'key' => 'webhook_body' ) );
+		add_settings_field( 'webhook_test_send', __( 'テスト送信', 'next-staatic-actions' ), array( $this, 'fieldTestSend' ), self::PAGE_SLUG, 'nsa_webhook', array( 'channel' => 'webhook' ) );
 
 		add_settings_section( 'nsa_schedule', __( 'スケジュール公開', 'next-staatic-actions' ), array( $this, 'sectionScheduleIntro' ), self::PAGE_SLUG );
 		add_settings_field( 'schedule_enabled', __( 'スケジュール公開を有効化', 'next-staatic-actions' ), array( $this, 'fieldCheckbox' ), self::PAGE_SLUG, 'nsa_schedule', array( 'key' => 'schedule_enabled' ) );
@@ -142,6 +149,41 @@ final class SettingsPage {
 				?>
 			</form>
 		</div>
+		<script>
+		( function () {
+			document.addEventListener( 'click', function ( event ) {
+				var button = event.target.closest( '.nsa-test-send' );
+				if ( ! button ) {
+					return;
+				}
+				event.preventDefault();
+
+				var channel = button.dataset.channel;
+				var result  = document.querySelector( '.nsa-test-result[data-channel="' + channel + '"]' );
+				var data    = new FormData();
+				data.append( 'action', 'next_staatic_actions_test_send' );
+				data.append( 'nonce', button.dataset.nonce );
+				data.append( 'channel', channel );
+
+				button.disabled  = true;
+				result.textContent = <?php echo wp_json_encode( __( '送信中…', 'next-staatic-actions' ) ); ?>;
+				result.style.color = '';
+
+				fetch( ajaxurl, { method: 'POST', credentials: 'same-origin', body: data } )
+					.then( function ( response ) { return response.json(); } )
+					.then( function ( json ) {
+						button.disabled     = false;
+						result.textContent  = ( json.data && json.data.message ) ? json.data.message : '';
+						result.style.color  = json.success ? '#008a20' : '#d63638';
+					} )
+					.catch( function () {
+						button.disabled    = false;
+						result.textContent = <?php echo wp_json_encode( __( '通信エラーが発生しました。', 'next-staatic-actions' ) ); ?>;
+						result.style.color = '#d63638';
+					} );
+			} );
+		} )();
+		</script>
 		<?php
 	}
 
@@ -294,5 +336,42 @@ final class SettingsPage {
 			);
 		}
 		echo '</select>';
+	}
+
+	public function fieldTestSend( array $args ): void {
+		printf(
+			'<button type="button" class="button nsa-test-send" data-channel="%1$s" data-nonce="%2$s">%3$s</button> <span class="nsa-test-result" data-channel="%1$s"></span>',
+			esc_attr( $args['channel'] ),
+			esc_attr( wp_create_nonce( 'next_staatic_actions_test_send' ) ),
+			esc_html__( '保存済みの設定でテスト送信', 'next-staatic-actions' )
+		);
+	}
+
+	public function ajaxTestSend(): void {
+		check_ajax_referer( 'next_staatic_actions_test_send', 'nonce' );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( '権限がありません。', 'next-staatic-actions' ) ), 403 );
+
+			return;
+		}
+
+		$channel = isset( $_POST['channel'] ) ? sanitize_key( wp_unslash( $_POST['channel'] ) ) : '';
+		$logger  = new DebugLogger( $this->settings );
+
+		if ( $channel === 'email' ) {
+			$result = ( new EmailAction( $this->settings, $logger ) )->sendTest();
+		} elseif ( $channel === 'webhook' ) {
+			$result = ( new WebhookAction( $this->settings, $logger ) )->sendTest();
+		} else {
+			wp_send_json_error( array( 'message' => __( '不明な送信先です。', 'next-staatic-actions' ) ), 400 );
+
+			return;
+		}
+
+		if ( $result['success'] ) {
+			wp_send_json_success( $result );
+		}
+		wp_send_json_error( $result );
 	}
 }

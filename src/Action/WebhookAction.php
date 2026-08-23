@@ -7,6 +7,7 @@ namespace NExT\StaaticActions\Action;
 use NExT\StaaticActions\Admin\Settings;
 use NExT\StaaticActions\Logging\DebugLogger;
 use NExT\StaaticActions\Support\PlaceholderTemplate;
+use NExT\StaaticActions\Support\PublicationPayload;
 
 final class WebhookAction {
 
@@ -40,12 +41,25 @@ final class WebhookAction {
 		}
 	}
 
-	private function send( array $settings, array $context ): void {
+	/**
+	 * Sends using the current saved settings regardless of the
+	 * success/failure enable toggles, so the configuration can be
+	 * verified from the admin UI before turning it on.
+	 */
+	public function sendTest(): array {
+		return $this->send( $this->settings->get(), PublicationPayload::sample() );
+	}
+
+	private function send( array $settings, array $context ): array {
 		$url = PlaceholderTemplate::render( $settings['webhook_url'], $context );
 		if ( $url === '' ) {
-			$this->logger->log( 'Webhook skipped: URL is not configured.' );
+			$message = 'Webhook skipped: URL is not configured.';
+			$this->logger->log( $message );
 
-			return;
+			return array(
+				'success' => false,
+				'message' => $message,
+			);
 		}
 
 		$headers = $this->parseHeaders( $settings['webhook_headers'], $context );
@@ -67,16 +81,22 @@ final class WebhookAction {
 		);
 
 		if ( is_wp_error( $response ) ) {
-			$this->logger->log( sprintf( 'Webhook request failed: %s', $response->get_error_message() ) );
+			$message = sprintf( 'Webhook request failed: %s', $response->get_error_message() );
+			$this->logger->log( $message );
 
-			return;
+			return array(
+				'success' => false,
+				'message' => $message,
+			);
 		}
-		$this->logger->log(
-			sprintf(
-				'Webhook request sent to %s (status %d)',
-				$url,
-				wp_remote_retrieve_response_code( $response )
-			)
+
+		$statusCode = wp_remote_retrieve_response_code( $response );
+		$message    = sprintf( 'Webhook request sent to %s (status %d)', $url, $statusCode );
+		$this->logger->log( $message );
+
+		return array(
+			'success' => $statusCode >= 200 && $statusCode < 300,
+			'message' => $message,
 		);
 	}
 

@@ -30,4 +30,26 @@ final class PublicationPayload {
 			'failure_message'       => $failureMessage ?? '',
 		);
 	}
+
+	public static function sample(): array {
+		$now  = current_time( 'c' );
+		$user = wp_get_current_user();
+
+		return array(
+			'publication_id'        => 'test-' . wp_generate_uuid4(),
+			'status'                => 'test',
+			'is_preview'            => false,
+			'date_created'          => $now,
+			'date_finished'         => $now,
+			'destination_url'       => home_url(),
+			'entry_url'             => home_url(),
+			'num_urls_crawled'      => 0,
+			'num_results_deployed'  => 0,
+			'user_id'               => $user->ID,
+			'user_login'            => $user->user_login,
+			'site_url'              => home_url(),
+			'admin_publication_url' => admin_url(),
+			'failure_message'       => __( 'これはテスト送信です。', 'next-staatic-actions' ),
+		);
+	}
 }

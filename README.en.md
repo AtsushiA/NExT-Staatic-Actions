@@ -32,6 +32,10 @@ independently:
 | Cloudflare cache purge | Calls the Purge Cache API using a Zone ID / API token |
 | Webhook notification | Sends an HTTP request to any URL (method, headers, and body are configurable) |
 
+The email and webhook sections each have a "Send test with saved settings" button, letting you verify
+delivery and see a success/failure status immediately, without waiting for an actual Staatic publish
+(this works regardless of whether the enable toggles are on).
+
 The following placeholders are available in the email and webhook templates:
 
 ```
