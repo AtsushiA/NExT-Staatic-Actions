@@ -81,6 +81,13 @@ final class SettingsPage {
 		add_settings_field( 'webhook_headers', __( 'ヘッダー（1行につき Name: value）', 'next-staatic-actions' ), array( $this, 'fieldTextarea' ), self::PAGE_SLUG, 'nsa_webhook', array( 'key' => 'webhook_headers' ) );
 		add_settings_field( 'webhook_body', __( 'ボディ（空欄の場合はJSONを自動送信）', 'next-staatic-actions' ), array( $this, 'fieldTextarea' ), self::PAGE_SLUG, 'nsa_webhook', array( 'key' => 'webhook_body' ) );
 
+		add_settings_section( 'nsa_schedule', __( 'スケジュール公開', 'next-staatic-actions' ), array( $this, 'sectionScheduleIntro' ), self::PAGE_SLUG );
+		add_settings_field( 'schedule_enabled', __( 'スケジュール公開を有効化', 'next-staatic-actions' ), array( $this, 'fieldCheckbox' ), self::PAGE_SLUG, 'nsa_schedule', array( 'key' => 'schedule_enabled' ) );
+		add_settings_field( 'schedule_mode', __( '頻度', 'next-staatic-actions' ), array( $this, 'fieldModeSelect' ), self::PAGE_SLUG, 'nsa_schedule', array( 'key' => 'schedule_mode' ) );
+		add_settings_field( 'schedule_date', __( '日付（頻度が「指定日時」の場合のみ）', 'next-staatic-actions' ), array( $this, 'fieldDate' ), self::PAGE_SLUG, 'nsa_schedule', array( 'key' => 'schedule_date' ) );
+		add_settings_field( 'schedule_weekdays', __( '曜日（頻度が「毎週指定曜日」の場合のみ）', 'next-staatic-actions' ), array( $this, 'fieldWeekdays' ), self::PAGE_SLUG, 'nsa_schedule', array( 'key' => 'schedule_weekdays' ) );
+		add_settings_field( 'schedule_time', __( '時刻', 'next-staatic-actions' ), array( $this, 'fieldTime' ), self::PAGE_SLUG, 'nsa_schedule', array( 'key' => 'schedule_time' ) );
+
 		add_settings_section( 'nsa_advanced', __( '詳細設定', 'next-staatic-actions' ), '__return_false', self::PAGE_SLUG );
 		add_settings_field( 'debug_log_enabled', __( 'デバッグログを有効化', 'next-staatic-actions' ), array( $this, 'fieldCheckbox' ), self::PAGE_SLUG, 'nsa_advanced', array( 'key' => 'debug_log_enabled' ) );
 	}
@@ -102,6 +109,72 @@ final class SettingsPage {
 			</form>
 		</div>
 		<?php
+	}
+
+	public function sectionScheduleIntro(): void {
+		echo '<p>' . esc_html__( '指定した時刻に Staatic の公開（静的ジェネレート）を自動実行します。時刻はサイトのタイムゾーンで判定されます。', 'next-staatic-actions' ) . '</p>';
+	}
+
+	public function fieldModeSelect( array $args ): void {
+		$value = $this->settings->get()[ $args['key'] ];
+		$modes = array(
+			'one_time' => __( '指定日時に1回だけ実行', 'next-staatic-actions' ),
+			'daily'    => __( '毎日実行', 'next-staatic-actions' ),
+			'weekly'   => __( '毎週指定曜日に実行', 'next-staatic-actions' ),
+		);
+		printf( '<select name="%1$s[%2$s]">', esc_attr( Settings::OPTION_NAME ), esc_attr( $args['key'] ) );
+		foreach ( $modes as $mode => $label ) {
+			printf(
+				'<option value="%1$s" %2$s>%3$s</option>',
+				esc_attr( $mode ),
+				selected( $value, $mode, false ),
+				esc_html( $label )
+			);
+		}
+		echo '</select>';
+	}
+
+	public function fieldTime( array $args ): void {
+		$value = $this->settings->get()[ $args['key'] ];
+		printf(
+			'<input type="time" name="%1$s[%2$s]" value="%3$s" />',
+			esc_attr( Settings::OPTION_NAME ),
+			esc_attr( $args['key'] ),
+			esc_attr( $value )
+		);
+	}
+
+	public function fieldDate( array $args ): void {
+		$value = $this->settings->get()[ $args['key'] ];
+		printf(
+			'<input type="date" name="%1$s[%2$s]" value="%3$s" />',
+			esc_attr( Settings::OPTION_NAME ),
+			esc_attr( $args['key'] ),
+			esc_attr( $value )
+		);
+	}
+
+	public function fieldWeekdays( array $args ): void {
+		$value    = $this->settings->get()[ $args['key'] ];
+		$weekdays = array(
+			'mon' => __( '月', 'next-staatic-actions' ),
+			'tue' => __( '火', 'next-staatic-actions' ),
+			'wed' => __( '水', 'next-staatic-actions' ),
+			'thu' => __( '木', 'next-staatic-actions' ),
+			'fri' => __( '金', 'next-staatic-actions' ),
+			'sat' => __( '土', 'next-staatic-actions' ),
+			'sun' => __( '日', 'next-staatic-actions' ),
+		);
+		foreach ( $weekdays as $day => $label ) {
+			printf(
+				'<label style="margin-right:1em;"><input type="checkbox" name="%1$s[%2$s][]" value="%3$s" %4$s /> %5$s</label>',
+				esc_attr( Settings::OPTION_NAME ),
+				esc_attr( $args['key'] ),
+				esc_attr( $day ),
+				checked( in_array( $day, $value, true ), true, false ),
+				esc_html( $label )
+			);
+		}
 	}
 
 	public function fieldCheckbox( array $args ): void {

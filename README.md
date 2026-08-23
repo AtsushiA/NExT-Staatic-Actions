@@ -6,6 +6,7 @@
 
 [Staatic](https://staatic.com/wordpress)（静的サイトジェネレーター）の公開（デプロイ）が完了した際に、
 メール通知・Cloudflareキャッシュパージ・Webhook通知を自動実行する WordPress プラグインです。
+また、指定した日時・毎日・毎週指定曜日のスケジュールで公開そのものを自動実行することもできます。
 
 ## 動作要件
 
@@ -36,6 +37,20 @@ Staatic の公開が**成功**または**失敗**した際に、以下を個別�
 {{date_created}} {{date_finished}} {{num_urls_crawled}} {{num_results_deployed}}
 {{user_id}} {{user_login}} {{site_url}} {{admin_publication_url}} {{failure_message}}
 ```
+
+## スケジュール公開
+
+Staatic の管理メニュー配下「Actions」設定ページの「スケジュール公開」セクションで、以下の頻度を選んで
+自動公開を有効化できます。時刻はサイトのタイムゾーンで判定されます。
+
+| 頻度 | 内容 |
+|---|---|
+| 指定日時に1回だけ実行 | 指定した日付・時刻に1回だけ公開を実行（過去の日時は無視されます） |
+| 毎日実行 | 毎日指定した時刻に公開を実行 |
+| 毎週指定曜日に実行 | 選択した曜日の指定時刻にのみ公開を実行 |
+
+WP-Cron（`next_staatic_actions_scheduled_publish`）から Staatic 自身の公開トリガーである
+`do_action('staatic_publish')` を呼び出す仕組みで、設定を保存すると自動的にスケジュールが再設定されます。
 
 ## 検知の仕組み
 

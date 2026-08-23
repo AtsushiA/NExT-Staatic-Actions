@@ -13,6 +13,7 @@ use NExT\StaaticActions\Detection\FailureDetector;
 use NExT\StaaticActions\Detection\NotificationGuard;
 use NExT\StaaticActions\Detection\SuccessDetector;
 use NExT\StaaticActions\Logging\DebugLogger;
+use NExT\StaaticActions\Schedule\PublishScheduler;
 
 final class Plugin {
 
@@ -27,6 +28,8 @@ final class Plugin {
 		( new EmailAction( $settings, $logger ) )->registerHooks();
 		( new CloudflarePurgeAction( $settings, $logger ) )->registerHooks();
 		( new WebhookAction( $settings, $logger ) )->registerHooks();
+
+		( new PublishScheduler( $settings, $logger ) )->registerHooks();
 
 		( new SettingsPage( $settings ) )->registerHooks();
 	}

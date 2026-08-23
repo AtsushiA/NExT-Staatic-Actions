@@ -28,6 +28,12 @@ final class Settings {
 			'webhook_headers'            => '',
 			'webhook_body'               => '',
 
+			'schedule_enabled'           => false,
+			'schedule_mode'              => 'daily',
+			'schedule_time'              => '03:00',
+			'schedule_date'              => '',
+			'schedule_weekdays'          => array(),
+
 			'debug_log_enabled'          => false,
 		);
 	}
@@ -70,9 +76,41 @@ final class Settings {
 		$out['webhook_headers']         = $this->sanitizeMultiline( $input['webhook_headers'] ?? '' );
 		$out['webhook_body']            = $this->sanitizeMultiline( $input['webhook_body'] ?? '' );
 
+		$out['schedule_enabled']  = ! empty( $input['schedule_enabled'] );
+		$mode                     = $input['schedule_mode'] ?? 'daily';
+		$out['schedule_mode']     = in_array( $mode, array( 'one_time', 'daily', 'weekly' ), true ) ? $mode : 'daily';
+		$out['schedule_time']     = $this->sanitizeTime( $input['schedule_time'] ?? $defaults['schedule_time'] );
+		$out['schedule_date']     = $this->sanitizeDate( $input['schedule_date'] ?? '' );
+		$out['schedule_weekdays'] = $this->sanitizeWeekdays( $input['schedule_weekdays'] ?? array() );
+
 		$out['debug_log_enabled'] = ! empty( $input['debug_log_enabled'] );
 
 		return $out;
+	}
+
+	private function sanitizeTime( string $raw ): string {
+		if ( preg_match( '/^([01]\d|2[0-3]):([0-5]\d)$/', $raw ) ) {
+			return $raw;
+		}
+
+		return self::defaults()['schedule_time'];
+	}
+
+	private function sanitizeDate( string $raw ): string {
+		if ( preg_match( '/^\d{4}-\d{2}-\d{2}$/', $raw ) ) {
+			return $raw;
+		}
+
+		return '';
+	}
+
+	private function sanitizeWeekdays( $raw ): array {
+		if ( ! is_array( $raw ) ) {
+			return array();
+		}
+		$valid = array( 'mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun' );
+
+		return array_values( array_intersect( $valid, array_map( 'sanitize_key', $raw ) ) );
 	}
 
 	private function sanitizeEmailList( string $raw ): string {
