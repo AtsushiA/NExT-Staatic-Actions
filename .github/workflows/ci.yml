@@ -28,6 +28,9 @@ jobs:
         image: mysql:8.0
         env:
           MYSQL_ROOT_PASSWORD: root
+          # Pre-creates the DB so install-wp-tests.sh's SKIP_DB_CREATE=true
+          # (below) has an existing database to point WordPress at.
+          MYSQL_DATABASE: wordpress_test
         ports:
           - 3306:3306
         options: >-
