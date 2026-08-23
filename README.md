@@ -1,5 +1,7 @@
 # NExT Staatic Actions
 
+[![CI](https://github.com/AtsushiA/NExT-Staatic-Actions/actions/workflows/ci.yml/badge.svg)](https://github.com/AtsushiA/NExT-Staatic-Actions/actions/workflows/ci.yml)
+
 *(English README: [README.en.md](README.en.md))*
 
 [Staatic](https://staatic.com/wordpress)（静的サイトジェネレーター）の公開（デプロイ）が完了した際に、
@@ -61,6 +63,27 @@ add_action('next_staatic_actions_publish_failed', function (array $context) {
     // ...
 });
 ```
+
+## 開発
+
+```bash
+composer install
+
+# コーディング規約チェック / 自動修正
+composer run phpcs
+composer run phpcbf
+
+# テスト（Unit のみ、WordPress不要）
+composer run test:unit
+
+# テスト（Integration含む全体。WordPressテストライブラリが必要）
+bash bin/install-wp-tests.sh wordpress_test root root 127.0.0.1 latest
+WP_TESTS_DIR=/tmp/wordpress-tests-lib vendor/bin/phpunit --bootstrap tests/phpunit/bootstrap.php
+```
+
+`main` への push・Pull Request で GitHub Actions が phpcs・PHPUnit（WP最新+1世代前 × PHP 7.4/8.3/8.4）・
+Plugin Check を実行します。`0.0.0` 形式のタグを push すると、CIが全て通過した場合のみ配布用zipを
+ビルドして GitHub Release を自動作成します（プラグインヘッダーの `Version` とタグが一致している必要があります）。
 
 ## アンインストール
 

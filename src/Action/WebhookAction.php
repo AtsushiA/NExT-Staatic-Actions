@@ -8,90 +8,89 @@ use NExT\StaaticActions\Admin\Settings;
 use NExT\StaaticActions\Logging\DebugLogger;
 use NExT\StaaticActions\Support\PlaceholderTemplate;
 
-final class WebhookAction
-{
-    /** @var Settings */
-    private $settings;
+final class WebhookAction {
 
-    /** @var DebugLogger */
-    private $logger;
+	/** @var Settings */
+	private $settings;
 
-    public function __construct(Settings $settings, DebugLogger $logger)
-    {
-        $this->settings = $settings;
-        $this->logger = $logger;
-    }
+	/** @var DebugLogger */
+	private $logger;
 
-    public function registerHooks(): void
-    {
-        add_action('next_staatic_actions_publish_succeeded', [$this, 'handleSucceeded']);
-        add_action('next_staatic_actions_publish_failed', [$this, 'handleFailed']);
-    }
+	public function __construct( Settings $settings, DebugLogger $logger ) {
+		$this->settings = $settings;
+		$this->logger   = $logger;
+	}
 
-    public function handleSucceeded(array $context): void
-    {
-        $settings = $this->settings->get();
-        if ($settings['webhook_enabled_success']) {
-            $this->send($settings, $context);
-        }
-    }
+	public function registerHooks(): void {
+		add_action( 'next_staatic_actions_publish_succeeded', array( $this, 'handleSucceeded' ) );
+		add_action( 'next_staatic_actions_publish_failed', array( $this, 'handleFailed' ) );
+	}
 
-    public function handleFailed(array $context): void
-    {
-        $settings = $this->settings->get();
-        if ($settings['webhook_enabled_failure']) {
-            $this->send($settings, $context);
-        }
-    }
+	public function handleSucceeded( array $context ): void {
+		$settings = $this->settings->get();
+		if ( $settings['webhook_enabled_success'] ) {
+			$this->send( $settings, $context );
+		}
+	}
 
-    private function send(array $settings, array $context): void
-    {
-        $url = PlaceholderTemplate::render($settings['webhook_url'], $context);
-        if ($url === '') {
-            $this->logger->log('Webhook skipped: URL is not configured.');
+	public function handleFailed( array $context ): void {
+		$settings = $this->settings->get();
+		if ( $settings['webhook_enabled_failure'] ) {
+			$this->send( $settings, $context );
+		}
+	}
 
-            return;
-        }
+	private function send( array $settings, array $context ): void {
+		$url = PlaceholderTemplate::render( $settings['webhook_url'], $context );
+		if ( $url === '' ) {
+			$this->logger->log( 'Webhook skipped: URL is not configured.' );
 
-        $headers = $this->parseHeaders($settings['webhook_headers'], $context);
-        $body = trim($settings['webhook_body']) !== ''
-            ? PlaceholderTemplate::render($settings['webhook_body'], $context)
-            : wp_json_encode($context);
-        if (!isset($headers['Content-Type'])) {
-            $headers['Content-Type'] = 'application/json';
-        }
+			return;
+		}
 
-        $response = wp_remote_request($url, [
-            'method' => $settings['webhook_method'],
-            'headers' => $headers,
-            'body' => $body,
-            'timeout' => 10,
-        ]);
+		$headers = $this->parseHeaders( $settings['webhook_headers'], $context );
+		$body    = trim( $settings['webhook_body'] ) !== ''
+			? PlaceholderTemplate::render( $settings['webhook_body'], $context )
+			: wp_json_encode( $context );
+		if ( ! isset( $headers['Content-Type'] ) ) {
+			$headers['Content-Type'] = 'application/json';
+		}
 
-        if (is_wp_error($response)) {
-            $this->logger->log(sprintf('Webhook request failed: %s', $response->get_error_message()));
+		$response = wp_remote_request(
+			$url,
+			array(
+				'method'  => $settings['webhook_method'],
+				'headers' => $headers,
+				'body'    => $body,
+				'timeout' => 10,
+			)
+		);
 
-            return;
-        }
-        $this->logger->log(sprintf(
-            'Webhook request sent to %s (status %d)',
-            $url,
-            wp_remote_retrieve_response_code($response)
-        ));
-    }
+		if ( is_wp_error( $response ) ) {
+			$this->logger->log( sprintf( 'Webhook request failed: %s', $response->get_error_message() ) );
 
-    private function parseHeaders(string $raw, array $context): array
-    {
-        $headers = [];
-        foreach (preg_split('/\r\n|\r|\n/', $raw) as $line) {
-            $line = trim($line);
-            if ($line === '' || strpos($line, ':') === false) {
-                continue;
-            }
-            [$name, $value] = explode(':', $line, 2);
-            $headers[trim($name)] = PlaceholderTemplate::render(trim($value), $context);
-        }
+			return;
+		}
+		$this->logger->log(
+			sprintf(
+				'Webhook request sent to %s (status %d)',
+				$url,
+				wp_remote_retrieve_response_code( $response )
+			)
+		);
+	}
 
-        return $headers;
-    }
+	private function parseHeaders( string $raw, array $context ): array {
+		$headers = array();
+		foreach ( preg_split( '/\r\n|\r|\n/', $raw ) as $line ) {
+			$line = trim( $line );
+			if ( $line === '' || strpos( $line, ':' ) === false ) {
+				continue;
+			}
+			[$name, $value]           = explode( ':', $line, 2 );
+			$headers[ trim( $name ) ] = PlaceholderTemplate::render( trim( $value ), $context );
+		}
+
+		return $headers;
+	}
 }

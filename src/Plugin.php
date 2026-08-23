@@ -14,21 +14,20 @@ use NExT\StaaticActions\Detection\NotificationGuard;
 use NExT\StaaticActions\Detection\SuccessDetector;
 use NExT\StaaticActions\Logging\DebugLogger;
 
-final class Plugin
-{
-    public function registerHooks(): void
-    {
-        $settings = new Settings();
-        $logger = new DebugLogger($settings);
-        $guard = new NotificationGuard();
+final class Plugin {
 
-        (new SuccessDetector($guard, $logger))->registerHooks();
-        (new FailureDetector($guard, $logger))->registerHooks();
+	public function registerHooks(): void {
+		$settings = new Settings();
+		$logger   = new DebugLogger( $settings );
+		$guard    = new NotificationGuard();
 
-        (new EmailAction($settings, $logger))->registerHooks();
-        (new CloudflarePurgeAction($settings, $logger))->registerHooks();
-        (new WebhookAction($settings, $logger))->registerHooks();
+		( new SuccessDetector( $guard, $logger ) )->registerHooks();
+		( new FailureDetector( $guard, $logger ) )->registerHooks();
 
-        (new SettingsPage($settings))->registerHooks();
-    }
+		( new EmailAction( $settings, $logger ) )->registerHooks();
+		( new CloudflarePurgeAction( $settings, $logger ) )->registerHooks();
+		( new WebhookAction( $settings, $logger ) )->registerHooks();
+
+		( new SettingsPage( $settings ) )->registerHooks();
+	}
 }

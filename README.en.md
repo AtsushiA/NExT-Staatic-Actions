@@ -1,5 +1,7 @@
 # NExT Staatic Actions
 
+[![CI](https://github.com/AtsushiA/NExT-Staatic-Actions/actions/workflows/ci.yml/badge.svg)](https://github.com/AtsushiA/NExT-Staatic-Actions/actions/workflows/ci.yml)
+
 *(日本語版 README: [README.md](README.md))*
 
 A WordPress plugin that automatically sends email notifications, purges Cloudflare cache, and fires
@@ -65,6 +67,28 @@ add_action('next_staatic_actions_publish_failed', function (array $context) {
     // ...
 });
 ```
+
+## Development
+
+```bash
+composer install
+
+# Coding standards check / auto-fix
+composer run phpcs
+composer run phpcbf
+
+# Unit tests only (no WordPress required)
+composer run test:unit
+
+# Full suite including integration tests (requires the WordPress test library)
+bash bin/install-wp-tests.sh wordpress_test root root 127.0.0.1 latest
+WP_TESTS_DIR=/tmp/wordpress-tests-lib vendor/bin/phpunit --bootstrap tests/phpunit/bootstrap.php
+```
+
+GitHub Actions runs phpcs, PHPUnit (WP latest + one prior version × PHP 7.4/8.3/8.4), and Plugin Check
+on every push/PR to `main`. Pushing a tag in `0.0.0` format builds a distributable zip and creates a
+GitHub Release automatically, but only once all CI checks pass (the tag must also match the plugin
+header's `Version`).
 
 ## Uninstall
 

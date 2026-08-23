@@ -1,7 +1,7 @@
 <?php
 
-if (!defined('WP_UNINSTALL_PLUGIN')) {
-    die;
+if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
+	die;
 }
 
-delete_option('next_staatic_actions_settings');
+delete_option( 'next_staatic_actions_settings' );
