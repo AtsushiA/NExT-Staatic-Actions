@@ -25,18 +25,18 @@ final class SchedulePageTest extends WP_UnitTestCase {
 		parent::tear_down();
 	}
 
-	public function test_ensure_capability_granted_adds_the_capability_to_editor_and_administrator(): void {
+	public function test_sync_grants_the_capability_to_editor_and_administrator_by_default(): void {
 		self::assertFalse( get_role( 'editor' )->has_cap( SchedulePage::CAPABILITY ) );
 		self::assertFalse( get_role( 'administrator' )->has_cap( SchedulePage::CAPABILITY ) );
 
-		$this->page->ensureCapabilityGranted();
+		$this->page->syncEditorCapability();
 
 		self::assertTrue( get_role( 'editor' )->has_cap( SchedulePage::CAPABILITY ) );
 		self::assertTrue( get_role( 'administrator' )->has_cap( SchedulePage::CAPABILITY ) );
 	}
 
-	public function test_ensure_capability_granted_does_not_grant_it_to_lower_roles(): void {
-		$this->page->ensureCapabilityGranted();
+	public function test_sync_does_not_grant_it_to_lower_roles(): void {
+		$this->page->syncEditorCapability();
 
 		self::assertFalse( get_role( 'author' )->has_cap( SchedulePage::CAPABILITY ) );
 		self::assertFalse( get_role( 'contributor' )->has_cap( SchedulePage::CAPABILITY ) );
@@ -44,12 +44,83 @@ final class SchedulePageTest extends WP_UnitTestCase {
 	}
 
 	public function test_an_editor_user_has_the_capability_after_granting(): void {
-		$this->page->ensureCapabilityGranted();
+		$this->page->syncEditorCapability();
 
 		$editorId = self::factory()->user->create( array( 'role' => 'editor' ) );
 		$editor   = get_userdata( $editorId );
 
 		self::assertTrue( $editor->has_cap( SchedulePage::CAPABILITY ) );
 		self::assertFalse( $editor->has_cap( 'manage_options' ) );
+	}
+
+	public function test_sync_revokes_the_capability_from_editor_when_the_toggle_is_off(): void {
+		update_option(
+			Settings::OPTION_NAME,
+			array_merge(
+				Settings::defaults(),
+				array(
+					'schedule_editor_access_enabled' => true,
+				)
+			)
+		);
+		$this->page->syncEditorCapability();
+		self::assertTrue( get_role( 'editor' )->has_cap( SchedulePage::CAPABILITY ) );
+
+		update_option(
+			Settings::OPTION_NAME,
+			array_merge(
+				Settings::defaults(),
+				array(
+					'schedule_editor_access_enabled' => false,
+				)
+			)
+		);
+		$this->page->syncEditorCapability();
+
+		self::assertFalse( get_role( 'editor' )->has_cap( SchedulePage::CAPABILITY ) );
+	}
+
+	public function test_sync_keeps_the_administrator_capability_even_when_the_toggle_is_off(): void {
+		update_option(
+			Settings::OPTION_NAME,
+			array_merge(
+				Settings::defaults(),
+				array(
+					'schedule_editor_access_enabled' => false,
+				)
+			)
+		);
+
+		$this->page->syncEditorCapability();
+
+		self::assertTrue( get_role( 'administrator' )->has_cap( SchedulePage::CAPABILITY ) );
+		self::assertFalse( get_role( 'editor' )->has_cap( SchedulePage::CAPABILITY ) );
+	}
+
+	public function test_sync_regrants_the_capability_once_the_toggle_is_turned_back_on(): void {
+		update_option(
+			Settings::OPTION_NAME,
+			array_merge(
+				Settings::defaults(),
+				array(
+					'schedule_editor_access_enabled' => false,
+				)
+			)
+		);
+		$this->page->syncEditorCapability();
+		self::assertFalse( get_role( 'editor' )->has_cap( SchedulePage::CAPABILITY ) );
+
+		update_option(
+			Settings::OPTION_NAME,
+			array_merge(
+				Settings::defaults(),
+				array(
+					'schedule_editor_access_enabled' => true,
+				)
+			)
+		);
+		$this->page->syncEditorCapability();
+
+		self::assertTrue( get_role( 'editor' )->has_cap( SchedulePage::CAPABILITY ) );
 	}
 }

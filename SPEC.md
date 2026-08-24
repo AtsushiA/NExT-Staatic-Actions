@@ -87,6 +87,11 @@ Actionsページの全タブのフィールドは常にフォームに出力し�
     が編集者のブラウザに表示されることも、保存時に上書きされることもない
 - カスタムcapability `next_staatic_actions_manage_schedule` を `admin_init` フックで自己修復的に
   administrator・editorロールへ付与する（既にある場合は書き込みしない、軽量なチェック）
+- editorロールへの付与そのものは Actions → 詳細設定タブのチェックボックス
+  （`schedule_editor_access_enabled`、デフォルト有効）でON/OFFできる。管理者は常時付与される。
+  このフィールドは `Settings::sanitize()` でのみ変更可能とし、`sanitizeScheduleOnly()` の対象からは
+  意図的に除外している（編集者自身のスケジュール公開ページからの保存では、このトグルを自分で
+  ONに戻すことができない設計）
 
 
 ## CI/CD
@@ -110,6 +115,7 @@ Actionsページの全タブのフィールドは常にフォームに出力し�
 | [1.4.0](https://github.com/AtsushiA/NExT-Staatic-Actions/releases/tag/1.4.0) | Cloudflareに「接続確認」「今すぐパージ」ボタンを追加 |
 | [1.5.0](https://github.com/AtsushiA/NExT-Staatic-Actions/releases/tag/1.5.0) | セキュリティレビューで発見した不具合を修正：設定保存時、一部フィールドが配列で送信されるとFatal Errorになっていた問題を修正 |
 | [1.6.0](https://github.com/AtsushiA/NExT-Staatic-Actions/releases/tag/1.6.0) | スケジュール公開を「Actions」とは別ページに分離し、編集者ロールにも操作を許可（他の設定は編集者から不可視・変更不可） |
+| [1.7.0](https://github.com/AtsushiA/NExT-Staatic-Actions/releases/tag/1.7.0) | Actions → 詳細設定タブに、編集者ロールへのスケジュール公開アクセスをON/OFFするチェックボックスを追加 |
 
 
 ## 将来的な拡張（未着手）

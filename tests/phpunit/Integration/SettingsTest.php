@@ -25,7 +25,15 @@ final class SettingsTest extends WP_UnitTestCase {
 		// submitted form field was not an array; see wp-admin/options.php.
 		$result = $this->settings->sanitize( 'not-an-array' );
 
-		self::assertSame( Settings::defaults(), $result );
+		// Every checkbox-style field, schedule_editor_access_enabled
+		// included, follows the same "absent from input means unchecked"
+		// convention as a real browser form submission would, even though
+		// its own default() value (used only to pre-fill Settings::get()
+		// for a brand new install) is true.
+		self::assertSame(
+			array_merge( Settings::defaults(), array( 'schedule_editor_access_enabled' => false ) ),
+			$result
+		);
 	}
 
 	public function test_sanitize_filters_invalid_email_addresses(): void {
@@ -214,5 +222,39 @@ final class SettingsTest extends WP_UnitTestCase {
 		);
 
 		self::assertIsString( $result['schedule_time'] );
+	}
+
+	public function test_sanitize_schedule_only_cannot_toggle_its_own_editor_access(): void {
+		update_option(
+			Settings::OPTION_NAME,
+			array_merge(
+				Settings::defaults(),
+				array(
+					'schedule_editor_access_enabled' => false,
+				)
+			)
+		);
+
+		// An editor's own save request has no way to flip this flag, since
+		// the schedule-only page never renders or submits this field.
+		$result = $this->settings->sanitizeScheduleOnly(
+			array(
+				'schedule_editor_access_enabled' => '1',
+			)
+		);
+
+		self::assertFalse( $result['schedule_editor_access_enabled'] );
+	}
+
+	public function test_sanitize_casts_the_editor_access_toggle_to_a_boolean(): void {
+		$result = $this->settings->sanitize(
+			array(
+				'schedule_editor_access_enabled' => '1',
+			)
+		);
+		self::assertTrue( $result['schedule_editor_access_enabled'] );
+
+		$result = $this->settings->sanitize( array() );
+		self::assertFalse( $result['schedule_editor_access_enabled'] );
 	}
 }

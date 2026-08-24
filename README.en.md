@@ -68,6 +68,10 @@ webhook settings) remains administrator-only (`manage_options`). Editors can't v
 anything besides the schedule fields — saving from this page always leaves every other setting
 exactly as currently stored in the database.
 
+Whether editors get this access at all is controlled by administrators via a checkbox on the
+Actions → Advanced tab (enabled by default). Turning it off blocks editors from the Scheduled
+Publish page starting with their next request.
+
 ## How detection works
 
 Staatic itself does not expose a dedicated "publish finished" or "publish failed" hook, so this
