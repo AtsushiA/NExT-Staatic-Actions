@@ -51,7 +51,7 @@ The following placeholders are available in the email and webhook templates:
 
 ## Scheduled publishing
 
-Under Staatic's admin menu, on the "Actions" settings page's "Scheduled Publish" section, you can
+Under Staatic's admin menu, on its own "Scheduled Publish" page (separate from "Actions"), you can
 enable automatic publishing with one of these modes. Times are evaluated in the site's timezone.
 
 | Mode | Description |
@@ -62,6 +62,11 @@ enable automatic publishing with one of these modes. Times are evaluated in the 
 
 This works via WP-Cron (`next_staatic_actions_scheduled_publish`) calling Staatic's own publish
 trigger, `do_action('staatic_publish')`; saving the settings automatically reschedules it.
+
+**This page alone is accessible to Editor role and above.** The "Actions" page (email, Cloudflare,
+webhook settings) remains administrator-only (`manage_options`). Editors can't view or change
+anything besides the schedule fields — saving from this page always leaves every other setting
+exactly as currently stored in the database.
 
 ## How detection works
 

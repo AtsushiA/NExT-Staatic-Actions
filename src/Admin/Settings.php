@@ -76,16 +76,38 @@ final class Settings {
 		$out['webhook_headers']         = $this->sanitizeMultiline( $this->str( $input['webhook_headers'] ?? '' ) );
 		$out['webhook_body']            = $this->sanitizeMultiline( $this->str( $input['webhook_body'] ?? '' ) );
 
-		$out['schedule_enabled']  = ! empty( $input['schedule_enabled'] );
-		$mode                     = $input['schedule_mode'] ?? 'daily';
-		$out['schedule_mode']     = in_array( $mode, array( 'one_time', 'daily', 'weekly' ), true ) ? $mode : 'daily';
-		$out['schedule_time']     = $this->sanitizeTime( $this->str( $input['schedule_time'] ?? $defaults['schedule_time'], $defaults['schedule_time'] ) );
-		$out['schedule_date']     = $this->sanitizeDate( $this->str( $input['schedule_date'] ?? '' ) );
-		$out['schedule_weekdays'] = $this->sanitizeWeekdays( $input['schedule_weekdays'] ?? array() );
+		$out = array_merge( $out, $this->sanitizeScheduleFields( $input, $defaults ) );
 
 		$out['debug_log_enabled'] = ! empty( $input['debug_log_enabled'] );
 
 		return $out;
+	}
+
+	/**
+	 * Sanitizes only the schedule_* fields from $input and merges them into
+	 * the currently stored settings, leaving every other (admin-only) field
+	 * exactly as stored. Used by the separate, lower-privilege "スケジュール
+	 * 公開" admin page so saving a schedule can never touch or leak the
+	 * email/Cloudflare/webhook settings.
+	 *
+	 * @param mixed $input
+	 */
+	public function sanitizeScheduleOnly( $input ): array {
+		$input = is_array( $input ) ? $input : array();
+
+		return array_merge( $this->get(), $this->sanitizeScheduleFields( $input, self::defaults() ) );
+	}
+
+	private function sanitizeScheduleFields( array $input, array $defaults ): array {
+		$mode = $input['schedule_mode'] ?? 'daily';
+
+		return array(
+			'schedule_enabled'  => ! empty( $input['schedule_enabled'] ),
+			'schedule_mode'     => in_array( $mode, array( 'one_time', 'daily', 'weekly' ), true ) ? $mode : 'daily',
+			'schedule_time'     => $this->sanitizeTime( $this->str( $input['schedule_time'] ?? $defaults['schedule_time'], $defaults['schedule_time'] ) ),
+			'schedule_date'     => $this->sanitizeDate( $this->str( $input['schedule_date'] ?? '' ) ),
+			'schedule_weekdays' => $this->sanitizeWeekdays( $input['schedule_weekdays'] ?? array() ),
+		);
 	}
 
 	/**

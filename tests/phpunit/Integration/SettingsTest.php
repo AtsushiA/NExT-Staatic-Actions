@@ -162,4 +162,57 @@ final class SettingsTest extends WP_UnitTestCase {
 			array( 'schedule_date' ),
 		);
 	}
+
+	public function test_sanitize_schedule_only_preserves_other_settings(): void {
+		update_option(
+			Settings::OPTION_NAME,
+			array_merge(
+				Settings::defaults(),
+				array(
+					'email_enabled_success' => true,
+					'email_recipients'      => 'existing@example.com',
+					'cloudflare_zone_id'    => 'existing-zone',
+					'cloudflare_api_token'  => 'existing-secret-token',
+					'webhook_url'           => 'https://existing.example.com/hook',
+				)
+			)
+		);
+
+		$result = $this->settings->sanitizeScheduleOnly(
+			array(
+				'schedule_enabled' => '1',
+				'schedule_mode'    => 'daily',
+				'schedule_time'    => '14:30',
+			)
+		);
+
+		// The fields the schedule-only page never displays or submits must
+		// come through completely untouched from what was already stored.
+		self::assertTrue( $result['email_enabled_success'] );
+		self::assertSame( 'existing@example.com', $result['email_recipients'] );
+		self::assertSame( 'existing-zone', $result['cloudflare_zone_id'] );
+		self::assertSame( 'existing-secret-token', $result['cloudflare_api_token'] );
+		self::assertSame( 'https://existing.example.com/hook', $result['webhook_url'] );
+
+		// The submitted schedule fields are applied and sanitized as usual.
+		self::assertTrue( $result['schedule_enabled'] );
+		self::assertSame( 'daily', $result['schedule_mode'] );
+		self::assertSame( '14:30', $result['schedule_time'] );
+	}
+
+	public function test_sanitize_schedule_only_does_not_fatal_on_non_array_input(): void {
+		$result = $this->settings->sanitizeScheduleOnly( 'not-an-array' );
+
+		self::assertSame( Settings::defaults()['schedule_mode'], $result['schedule_mode'] );
+	}
+
+	public function test_sanitize_schedule_only_rejects_an_invalid_time_as_an_array(): void {
+		$result = $this->settings->sanitizeScheduleOnly(
+			array(
+				'schedule_time' => array( 'unexpected' ),
+			)
+		);
+
+		self::assertIsString( $result['schedule_time'] );
+	}
 }
