@@ -7,6 +7,7 @@ namespace NExT\StaaticActions;
 use NExT\StaaticActions\Action\CloudflarePurgeAction;
 use NExT\StaaticActions\Action\EmailAction;
 use NExT\StaaticActions\Action\WebhookAction;
+use NExT\StaaticActions\Admin\SchedulePage;
 use NExT\StaaticActions\Admin\Settings;
 use NExT\StaaticActions\Admin\SettingsPage;
 use NExT\StaaticActions\Detection\FailureDetector;
@@ -32,5 +33,6 @@ final class Plugin {
 		( new PublishScheduler( $settings, $logger ) )->registerHooks();
 
 		( new SettingsPage( $settings ) )->registerHooks();
+		( new SchedulePage( $settings ) )->registerHooks();
 	}
 }

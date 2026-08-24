@@ -58,23 +58,35 @@ Staatic 本体には「公開完了」「公開失敗」を通知する専用フ
 - 曜日指定モードは WP-Cron が「毎日実行」の間隔でスケジュールし、コールバック内で当日の曜日が
   選択されているか判定してからのみ公開を実行する（WP-Cronは複数曜日の間隔を直接表現できないため）
 - プラグイン無効化・アンインストール時にスケジュールをクリアする
+- 設定は「Actions」ページとは別の専用ページ「スケジュール公開」で管理する（権限管理を参照）
 
 
 ## 設定管理
 
-wp-config.php の定数ではなく、WP管理画面の設定ページ（Settings API、Staatic メニュー配下の
-サブメニュー「Actions」）で管理する。縦に長くならないよう、タブ構成にしている。
+wp-config.php の定数ではなく、WP管理画面の設定ページ（Settings API）で管理する。Staatic メニュー配下に
+2つのページを持つ。
 
-タブ構成：メール通知 / Cloudflare キャッシュパージ / Webhook 通知 / スケジュール公開 / 詳細設定
+- **Actions**（`manage_options` のみ）— メール通知 / Cloudflare キャッシュパージ / Webhook 通知 / 詳細設定
+  の4タブ構成。縦に長くならないようタブ化している
+- **スケジュール公開**（`manage_options` に加え、独自capability `next_staatic_actions_manage_schedule`
+  を付与された編集者ロールもアクセス可）— 有効/無効、頻度、日付、曜日、時刻
 
-- メール: 有効/無効（成功・失敗別）、宛先（複数）、件名、本文、テスト送信
-- Cloudflare: 有効/無効（成功・失敗別）、Zone ID、APIトークン、接続確認、今すぐパージ
-- Webhook: 有効/無効（成功・失敗別）、URL、HTTPメソッド、ヘッダー、ボディ（プレースホルダーテンプレート対応）、テスト送信
-- スケジュール公開: 有効/無効、頻度、日付、曜日、時刻
-- 詳細設定: デバッグログ ON/OFF
+Actionsページの全タブのフィールドは常にフォームに出力し、CSSで表示/非表示のみを切り替える
+（タブをまたいで保存しても他タブの設定がデフォルト値で上書きされないようにするため）。
 
-全タブのフィールドは常にフォームに出力し、CSSで表示/非表示のみを切り替える（タブをまたいで保存しても
-他タブの設定がデフォルト値で上書きされないようにするため）。
+### 権限管理（編集者へのスケジュール公開委譲）
+
+メール/Cloudflare/Webhookの設定にはAPIトークン等の機密情報が含まれるため管理者限定のままとし、
+スケジュール公開のみ編集者以上に操作を許可したい、という要望から以下のように設計した。
+
+- 両ページとも同一のオプション（`next_staatic_actions_settings`）を共有するが、保存経路を分離：
+  - Actions: WordPress Settings API（`options.php`）経由、`Settings::sanitize()` が全フィールドを処理
+  - スケジュール公開: 独自の `admin-post.php` ハンドラ経由、`Settings::sanitizeScheduleOnly()` が
+    schedule_* フィールドのみをサニタイズし、**現在DBに保存されている値**（POSTされた値ではなく）に
+    マージする。これにより編集者がスケジュール公開ページを保存しても、他の管理者専用フィールド（APIトークン等）
+    が編集者のブラウザに表示されることも、保存時に上書きされることもない
+- カスタムcapability `next_staatic_actions_manage_schedule` を `admin_init` フックで自己修復的に
+  administrator・editorロールへ付与する（既にある場合は書き込みしない、軽量なチェック）
 
 
 ## CI/CD
@@ -97,6 +109,7 @@ wp-config.php の定数ではなく、WP管理画面の設定ページ（Setting
 | [1.3.0](https://github.com/AtsushiA/NExT-Staatic-Actions/releases/tag/1.3.0) | メール通知・Webhook通知に「テスト送信」ボタンを追加（ステータス表示付き） |
 | [1.4.0](https://github.com/AtsushiA/NExT-Staatic-Actions/releases/tag/1.4.0) | Cloudflareに「接続確認」「今すぐパージ」ボタンを追加 |
 | [1.5.0](https://github.com/AtsushiA/NExT-Staatic-Actions/releases/tag/1.5.0) | セキュリティレビューで発見した不具合を修正：設定保存時、一部フィールドが配列で送信されるとFatal Errorになっていた問題を修正 |
+| [1.6.0](https://github.com/AtsushiA/NExT-Staatic-Actions/releases/tag/1.6.0) | スケジュール公開を「Actions」とは別ページに分離し、編集者ロールにも操作を許可（他の設定は編集者から不可視・変更不可） |
 
 
 ## 将来的な拡張（未着手）
