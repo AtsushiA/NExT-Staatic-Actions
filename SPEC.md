@@ -1,7 +1,5 @@
 プラグイン名称 : NExT-Staatic-Actions
 
-ローカル環境 : http://test-ai.local/
-
 リポジトリ : https://github.com/AtsushiA/NExT-Staatic-Actions
 
 
