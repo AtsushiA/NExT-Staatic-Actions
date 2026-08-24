@@ -116,6 +116,7 @@ Actionsページの全タブのフィールドは常にフォームに出力し�
 | [1.5.0](https://github.com/AtsushiA/NExT-Staatic-Actions/releases/tag/1.5.0) | セキュリティレビューで発見した不具合を修正：設定保存時、一部フィールドが配列で送信されるとFatal Errorになっていた問題を修正 |
 | [1.6.0](https://github.com/AtsushiA/NExT-Staatic-Actions/releases/tag/1.6.0) | スケジュール公開を「Actions」とは別ページに分離し、編集者ロールにも操作を許可（他の設定は編集者から不可視・変更不可） |
 | [1.7.0](https://github.com/AtsushiA/NExT-Staatic-Actions/releases/tag/1.7.0) | Actions → 詳細設定タブに、編集者ロールへのスケジュール公開アクセスをON/OFFするチェックボックスを追加 |
+| [1.8.0](https://github.com/AtsushiA/NExT-Staatic-Actions/releases/tag/1.8.0) | セキュリティ・実装レビューで発見した不具合を修正：`uninstall.php` がカスタムcapability `next_staatic_actions_manage_schedule` をロールから削除していなかった問題を修正（設定オプション・cronスケジュールの削除は既に実装済みだった） |
 
 
 ## 将来的な拡張（未着手）
