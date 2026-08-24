@@ -115,6 +115,7 @@ final class SettingsPage {
 		add_settings_field( 'webhook_test_send', __( 'テスト送信', 'next-staatic-actions' ), array( $this, 'fieldTestSend' ), self::PAGE_SLUG, 'nsa_webhook', array( 'channel' => 'webhook' ) );
 
 		add_settings_section( 'nsa_advanced', __( '詳細設定', 'next-staatic-actions' ), '__return_false', self::PAGE_SLUG );
+		add_settings_field( 'schedule_editor_access_enabled', __( '編集者にスケジュール公開の操作を許可', 'next-staatic-actions' ), array( $this, 'fieldCheckbox' ), self::PAGE_SLUG, 'nsa_advanced', array( 'key' => 'schedule_editor_access_enabled' ) );
 		add_settings_field( 'debug_log_enabled', __( 'デバッグログを有効化', 'next-staatic-actions' ), array( $this, 'fieldCheckbox' ), self::PAGE_SLUG, 'nsa_advanced', array( 'key' => 'debug_log_enabled' ) );
 	}
 

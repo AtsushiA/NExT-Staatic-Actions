@@ -10,31 +10,32 @@ final class Settings {
 
 	public static function defaults(): array {
 		return array(
-			'email_enabled_success'      => false,
-			'email_enabled_failure'      => false,
-			'email_recipients'           => '',
-			'email_subject'              => '[{{site_url}}] Staatic publish {{status}}',
-			'email_body'                 => "Publication: {{publication_id}}\nStatus: {{status}}\nDestination: {{destination_url}}\nFinished: {{date_finished}}\n\n{{admin_publication_url}}",
+			'email_enabled_success'          => false,
+			'email_enabled_failure'          => false,
+			'email_recipients'               => '',
+			'email_subject'                  => '[{{site_url}}] Staatic publish {{status}}',
+			'email_body'                     => "Publication: {{publication_id}}\nStatus: {{status}}\nDestination: {{destination_url}}\nFinished: {{date_finished}}\n\n{{admin_publication_url}}",
 
-			'cloudflare_enabled_success' => false,
-			'cloudflare_enabled_failure' => false,
-			'cloudflare_zone_id'         => '',
-			'cloudflare_api_token'       => '',
+			'cloudflare_enabled_success'     => false,
+			'cloudflare_enabled_failure'     => false,
+			'cloudflare_zone_id'             => '',
+			'cloudflare_api_token'           => '',
 
-			'webhook_enabled_success'    => false,
-			'webhook_enabled_failure'    => false,
-			'webhook_url'                => '',
-			'webhook_method'             => 'POST',
-			'webhook_headers'            => '',
-			'webhook_body'               => '',
+			'webhook_enabled_success'        => false,
+			'webhook_enabled_failure'        => false,
+			'webhook_url'                    => '',
+			'webhook_method'                 => 'POST',
+			'webhook_headers'                => '',
+			'webhook_body'                   => '',
 
-			'schedule_enabled'           => false,
-			'schedule_mode'              => 'daily',
-			'schedule_time'              => '03:00',
-			'schedule_date'              => '',
-			'schedule_weekdays'          => array(),
+			'schedule_enabled'               => false,
+			'schedule_mode'                  => 'daily',
+			'schedule_time'                  => '03:00',
+			'schedule_date'                  => '',
+			'schedule_weekdays'              => array(),
+			'schedule_editor_access_enabled' => true,
 
-			'debug_log_enabled'          => false,
+			'debug_log_enabled'              => false,
 		);
 	}
 
@@ -77,6 +78,11 @@ final class Settings {
 		$out['webhook_body']            = $this->sanitizeMultiline( $this->str( $input['webhook_body'] ?? '' ) );
 
 		$out = array_merge( $out, $this->sanitizeScheduleFields( $input, $defaults ) );
+
+		// Deliberately handled only here, not in sanitizeScheduleFields(), so
+		// the schedule-only save path (used by editors) can never toggle
+		// their own access back on.
+		$out['schedule_editor_access_enabled'] = ! empty( $input['schedule_editor_access_enabled'] );
 
 		$out['debug_log_enabled'] = ! empty( $input['debug_log_enabled'] );
 

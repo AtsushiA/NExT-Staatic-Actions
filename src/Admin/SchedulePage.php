@@ -23,22 +23,40 @@ final class SchedulePage {
 		// priority 10) has registered its top-level 'staatic' page, otherwise
 		// WordPress resolves a mismatched hookname for this submenu and denies access.
 		add_action( 'admin_menu', array( $this, 'registerMenu' ), 20 );
-		add_action( 'admin_init', array( $this, 'ensureCapabilityGranted' ) );
+		// admin_init alone is enough to stay in sync promptly: it fires on
+		// literally the very next admin request from anyone (including the
+		// admin who just toggled the setting, via the post-save redirect, or
+		// an editor's own next page load), without reacting to every single
+		// update_option() call site-wide the way an update_option_{name}
+		// hook would.
+		add_action( 'admin_init', array( $this, 'syncEditorCapability' ) );
 		add_action( 'admin_post_' . self::NONCE_ACTION, array( $this, 'handleSave' ) );
 	}
 
 	/**
-	 * Editors don't have this capability by default; grant it once per role
-	 * (cheap in-memory check, only writes if actually missing) rather than
-	 * relying solely on a one-time activation hook, so upgrading an already-
-	 * active install also picks it up.
+	 * Administrators always have this capability. Whether the editor role
+	 * also has it follows the "編集者にスケジュール公開の操作を許可"
+	 * toggle on the Actions > 詳細設定 tab; this both grants and revokes
+	 * as needed (cheap in-memory has_cap() check, only writes when the
+	 * state actually needs to change), running on admin_init as a self-heal
+	 * and immediately whenever the settings are saved.
 	 */
-	public function ensureCapabilityGranted(): void {
-		foreach ( array( 'administrator', 'editor' ) as $roleName ) {
-			$role = get_role( $roleName );
-			if ( $role && ! $role->has_cap( self::CAPABILITY ) ) {
-				$role->add_cap( self::CAPABILITY );
-			}
+	public function syncEditorCapability(): void {
+		$administrator = get_role( 'administrator' );
+		if ( $administrator && ! $administrator->has_cap( self::CAPABILITY ) ) {
+			$administrator->add_cap( self::CAPABILITY );
+		}
+
+		$editor = get_role( 'editor' );
+		if ( ! $editor ) {
+			return;
+		}
+
+		$editorAccessEnabled = $this->settings->get()['schedule_editor_access_enabled'];
+		if ( $editorAccessEnabled && ! $editor->has_cap( self::CAPABILITY ) ) {
+			$editor->add_cap( self::CAPABILITY );
+		} elseif ( ! $editorAccessEnabled && $editor->has_cap( self::CAPABILITY ) ) {
+			$editor->remove_cap( self::CAPABILITY );
 		}
 	}
 
