@@ -1,6 +1,7 @@
 # NExT Staatic Actions
 
 [![CI](https://github.com/AtsushiA/NExT-Staatic-Actions/actions/workflows/ci.yml/badge.svg)](https://github.com/AtsushiA/NExT-Staatic-Actions/actions/workflows/ci.yml)
+[![Try in WordPress Playground](https://img.shields.io/badge/Try%20in-WordPress%20Playground-3858e9?logo=wordpress)](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/AtsushiA/NExT-Staatic-Actions/main/blueprint.json)
 
 *(English README: [README.en.md](README.en.md))*
 
